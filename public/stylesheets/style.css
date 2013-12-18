@@ -18,7 +18,7 @@ footer {
 }
 
 h1 {
-  font-size: 96px;
+  font-size: 48px;
   margin-top: .3em;
   margin-bottom: 0;
 }
@@ -44,7 +44,7 @@ h1, h2 {
 }
 
 #charts {
-  padding: 10px 0;
+  padding: 40px 0;
 }
 
 .chart {
@@ -140,8 +140,9 @@ h1, h2 {
 }
 
 aside {
-  position: absolute;
-  left: 740px;
+  /*position: absolute;*/
+  /*left: 740px;*/
+  float:right;
   font-size: smaller;
-  width: 220px;
+  width: 300px;
 }

@@ -1,5 +1,5 @@
 // (It's CSV, but GitHub Pages only gzip's JSON at the moment.)
-d3.csv("flights-3m.json", function(error, flights) {
+d3.csv("dataset.csv", function(error, flights) {
 
   // Various formatters.
   var formatNumber = d3.format(",d"),
@@ -14,9 +14,9 @@ d3.csv("flights-3m.json", function(error, flights) {
   // A little coercion, since the CSV is untyped.
   flights.forEach(function(d, i) {
     d.index = i;
-    d.date = parseDate(d.date);
-    d.delay = +d.delay;
-    d.distance = +d.distance;
+    d.date = parseDate(d.ReceptionDate);
+    d.rssi = +d._RSSI;
+    d.boardtemp = +d._BOARD_TEMP;
   });
 
   // Create the crossfilter for the relevant dimensions and groups.
@@ -26,10 +26,10 @@ d3.csv("flights-3m.json", function(error, flights) {
       dates = date.group(d3.time.day),
       hour = flight.dimension(function(d) { return d.date.getHours() + d.date.getMinutes() / 60; }),
       hours = hour.group(Math.floor),
-      delay = flight.dimension(function(d) { return Math.max(-60, Math.min(149, d.delay)); }),
-      delays = delay.group(function(d) { return Math.floor(d / 10) * 10; }),
-      distance = flight.dimension(function(d) { return Math.min(1999, d.distance); }),
-      distances = distance.group(function(d) { return Math.floor(d / 50) * 50; });
+      rssiDim = flight.dimension(function(d) { return Math.floor(d.rssi); }),
+      rssiGroup = rssiDim.group(function(d) { return Math.floor(d / 5) * 5; }),
+      boardtempDim = flight.dimension(function(d) { return d.boardtemp; }),
+      boardtempGroup = boardtempDim.group(function(d) { return Math.floor(d / 5) * 5; });
 
   var charts = [
 
@@ -41,27 +41,60 @@ d3.csv("flights-3m.json", function(error, flights) {
         .rangeRound([0, 10 * 24])),
 
     barChart()
-        .dimension(delay)
-        .group(delays)
+        .dimension(rssiDim)        
+        .group(rssiGroup.reduce(
+          // custom reduce functions to exclude empty values
+          function reduceAdd(p, v) { 
+            if(v.rssi < 0) {              
+              return p + 1;
+            }
+            return p;
+          },
+          function reduceRemove(p, v) {
+            if(v.rssi < 0) {
+              return p - 1;
+            }
+            return p;
+          },
+          function reduceInitial() {
+            return 0;
+          }
+        ))
       .x(d3.scale.linear()
-        .domain([-60, 150])
-        .rangeRound([0, 10 * 21])),
+        .domain([-120, 0])
+        .rangeRound([0, 10 * 30])),
 
     barChart()
-        .dimension(distance)
-        .group(distances)
+        .dimension(boardtempDim)
+        .group(boardtempGroup.reduce(
+          // custom reduce functions to exclude empty values
+          function reduceAdd(p, v) { 
+            if(v.boardtemp > 0) {              
+              return p + 1;
+            }
+            return p;
+          },
+          function reduceRemove(p, v) {
+            if(v.boardtemp > 0) {
+              return p - 1;
+            }
+            return p;
+          },
+          function reduceInitial() {
+            return 0;
+          }
+        ))
       .x(d3.scale.linear()
-        .domain([0, 2000])
-        .rangeRound([0, 10 * 40])),
+        .domain([0, 80])
+        .rangeRound([0, 10 * 25])),
 
     barChart()
         .dimension(date)
         .group(dates)
         .round(d3.time.day.round)
       .x(d3.time.scale()
-        .domain([new Date(2001, 0, 1), new Date(2001, 3, 1)])
+        .domain([new Date(2013, 7, 27), new Date(2013, 10, 5)])
         .rangeRound([0, 10 * 90]))
-        .filter([new Date(2001, 1, 1), new Date(2001, 2, 1)])
 
   ];
 
@@ -95,12 +128,8 @@ d3.csv("flights-3m.json", function(error, flights) {
   }
 
   // Like d3.time.format, but faster.
-  function parseDate(d) {
-    return new Date(2001,
-        d.substring(0, 2) - 1,
-        d.substring(2, 4),
-        d.substring(4, 6),
-        d.substring(6, 8));
+  function parseDate(d) { 
+    return new Date(Number(d));
   }
 
   window.filter = function(filters) {
@@ -139,21 +168,13 @@ d3.csv("flights-3m.json", function(error, flights) {
           .text(function(d) { return formatTime(d.date); });
 
       flightEnter.append("div")
-          .attr("class", "origin")
-          .text(function(d) { return d.origin; });
+          .attr("class", "rssi")
+          .text(function(d) { return formatNumber(d.rssi) + " db"; });
 
       flightEnter.append("div")
-          .attr("class", "destination")
-          .text(function(d) { return d.destination; });
-
-      flightEnter.append("div")
-          .attr("class", "distance")
-          .text(function(d) { return formatNumber(d.distance) + " mi."; });
-
-      flightEnter.append("div")
-          .attr("class", "delay")
-          .classed("early", function(d) { return d.delay < 0; })
-          .text(function(d) { return formatChange(d.delay) + " min."; });
+          .attr("class", "boardtemp")
+          // .classed("early", function(d) { return d.delay < 0; })
+          .text(function(d) { return formatNumber(d.boardtemp) ; });
 
       flight.exit().remove();
 
@@ -178,6 +199,8 @@ d3.csv("flights-3m.json", function(error, flights) {
     function chart(div) {
       var width = x.range()[1],
           height = y.range()[0];
+
+      //alert("group.top(1):" + group);
 
       y.domain([0, group.top(1)[0].value]);
 
