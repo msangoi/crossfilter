@@ -249,25 +249,24 @@ d3.csv("dataset.csv", function(error, flights) {
           .text(function(d) { return formatTime(d.date); });
 
       flightEnter.append("div")
-          .attr("class", "rssi")
+          .attr("class", "value")
           .text(function(d) { return formatNumber(d.rssi) + " db"; });
 
       flightEnter.append("div")
-          .attr("class", "boardtemp")
-          // .classed("early", function(d) { return d.delay < 0; })
+          .attr("class", "value")
           .text(function(d) { return formatNumber(d.boardTemp) ; });
 
       flightEnter.append("div")
-          .attr("class", "numberOfResets")
+          .attr("class", "value")
           .text(function(d) { return formatNumber(d.numberOfResets) ; });
 
       flightEnter.append("div")
-          .attr("class", "bytesSent")
-          .text(function(d) { return formatNumber(d.bytesSent) ; });
+          .attr("class", "value")
+          .text(function(d) { return formatNumber(d.bytesSent) + " B"; });
 
       flightEnter.append("div")
-          .attr("class", "bytesReceived")
-          .text(function(d) { return formatNumber(d.bytesReceived) ; });
+          .attr("class", "value")
+          .text(function(d) { return formatNumber(d.bytesReceived) + " B"; });
 
 
       flight.exit().remove();
