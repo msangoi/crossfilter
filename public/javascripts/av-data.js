@@ -16,7 +16,10 @@ d3.csv("dataset.csv", function(error, flights) {
     d.index = i;
     d.date = parseDate(d.ReceptionDate);
     d.rssi = +d._RSSI;
-    d.boardtemp = +d._BOARD_TEMP;
+    d.boardTemp = +d._BOARD_TEMP;
+    d.numberOfResets = +d._NUMBER_OF_RESETS; 
+    d.bytesSent = +d._BYTES_SENT;
+    d.bytesReceived = +d._BYTES_RECEIVED;
   });
 
   // Create the crossfilter for the relevant dimensions and groups.
@@ -28,8 +31,14 @@ d3.csv("dataset.csv", function(error, flights) {
       hours = hour.group(Math.floor),
       rssiDim = flight.dimension(function(d) { return Math.floor(d.rssi); }),
       rssiGroup = rssiDim.group(function(d) { return Math.floor(d / 5) * 5; }),
-      boardtempDim = flight.dimension(function(d) { return d.boardtemp; }),
-      boardtempGroup = boardtempDim.group(function(d) { return Math.floor(d / 5) * 5; });
+      boardtempDim = flight.dimension(function(d) { return d.boardTemp; }),
+      boardtempGroup = boardtempDim.group(function(d) { return Math.floor(d / 3) * 3; }),
+      resetsDim = flight.dimension(function(d) { return d.numberOfResets; }),
+      resetsGroup = resetsDim.group(function(d) { return Math.floor(d / 20) * 20; });
+      bytesSentDim = flight.dimension(function(d) { return d.bytesSent; }),
+      bytesSentGroup = bytesSentDim.group(function(d) { return Math.floor(d / 1000000) * 1000000; });
+      bytesReceivedDim = flight.dimension(function(d) { return d.bytesReceived; }),
+      bytesReceivedGroup = bytesReceivedDim.group(function(d) { return Math.floor(d / 1000000) * 1000000; });
 
   var charts = [
 
@@ -62,20 +71,20 @@ d3.csv("dataset.csv", function(error, flights) {
         ))
       .x(d3.scale.linear()
         .domain([-120, 0])
-        .rangeRound([0, 10 * 30])),
+        .rangeRound([0, 300])),
 
     barChart()
         .dimension(boardtempDim)
         .group(boardtempGroup.reduce(
           // custom reduce functions to exclude empty values
           function reduceAdd(p, v) { 
-            if(v.boardtemp > 0) {              
+            if(v.boardTemp > 0) {              
               return p + 1;
             }
             return p;
           },
           function reduceRemove(p, v) {
-            if(v.boardtemp > 0) {
+            if(v.boardTemp > 0) {
               return p - 1;
             }
             return p;
@@ -86,7 +95,79 @@ d3.csv("dataset.csv", function(error, flights) {
         ))
       .x(d3.scale.linear()
         .domain([0, 80])
+        .rangeRound([0, 300])),
+
+    barChart()
+        .dimension(resetsDim)
+        .group(resetsGroup.reduce(
+          // custom reduce functions to exclude empty values
+          function reduceAdd(p, v) { 
+            if(v.numberOfResets > 0) {              
+              return p + 1;
+            }
+            return p;
+          },
+          function reduceRemove(p, v) {
+            if(v.numberOfResets > 0) {
+              return p - 1;
+            }
+            return p;
+          },
+          function reduceInitial() {
+            return 0;
+          }
+        ))
+      .x(d3.scale.linear()
+        .domain([0, 450])
         .rangeRound([0, 10 * 25])),
+
+    barChart()
+        .dimension(bytesSentDim)
+        .group(bytesSentGroup.reduce(
+          // custom reduce functions to exclude empty values
+          function reduceAdd(p, v) { 
+            if(v.bytesSent > 0) {              
+              return p + 1;
+            }
+            return p;
+          },
+          function reduceRemove(p, v) {
+            if(v.bytesSent > 0) {
+              return p - 1;
+            }
+            return p;
+          },
+          function reduceInitial() {
+            return 0;
+          }
+        ))
+      .x(d3.scale.linear()
+        .domain([0, 30000000])
+        .rangeRound([0, 10 * 30])),
+
+    barChart()
+        .dimension(bytesReceivedDim)
+        .group(bytesReceivedGroup.reduce(
+          // custom reduce functions to exclude empty values
+          function reduceAdd(p, v) { 
+            if(v.bytesReceived > 0) {              
+              return p + 1;
+            }
+            return p;
+          },
+          function reduceRemove(p, v) {
+            if(v.bytesReceived > 0) {
+              return p - 1;
+            }
+            return p;
+          },
+          function reduceInitial() {
+            return 0;
+          }
+        ))
+      .x(d3.scale.linear()
+        .domain([0, 30000000])
+        .rangeRound([0, 10*30])),
 
     barChart()
         .dimension(date)
@@ -174,7 +255,20 @@ d3.csv("dataset.csv", function(error, flights) {
       flightEnter.append("div")
           .attr("class", "boardtemp")
           // .classed("early", function(d) { return d.delay < 0; })
-          .text(function(d) { return formatNumber(d.boardtemp) ; });
+          .text(function(d) { return formatNumber(d.boardTemp) ; });
+
+      flightEnter.append("div")
+          .attr("class", "numberOfResets")
+          .text(function(d) { return formatNumber(d.numberOfResets) ; });
+
+      flightEnter.append("div")
+          .attr("class", "bytesSent")
+          .text(function(d) { return formatNumber(d.bytesSent) ; });
+
+      flightEnter.append("div")
+          .attr("class", "bytesReceived")
+          .text(function(d) { return formatNumber(d.bytesReceived) ; });
+
 
       flight.exit().remove();
 
